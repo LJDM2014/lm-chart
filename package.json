@@ -1,0 +1,41 @@
+{
+  "name": "lm-chart",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "vue-tsc --noEmit",
+    "lint": "eslint . --fix",
+    "format": "prettier --write \"src/**/*.{vue,ts,css}\""
+  },
+  "dependencies": {
+    "@antv/g2": "^5.4.8",
+    "apexcharts": "^8.6.0",
+    "chart.js": "^4.6.1",
+    "d3": "^7.9.0",
+    "echarts": "^5.6.0",
+    "echarts-liquidfill": "^3.1.0",
+    "echarts-wordcloud": "^2.1.0",
+    "pinia": "^2.3.1",
+    "shiki": "^4.5.0",
+    "vue": "^3.5.13",
+    "vue-router": "^4.5.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.18.0",
+    "@types/d3": "^7.4.3",
+    "@types/node": "^22.10.5",
+    "@vitejs/plugin-vue": "^5.2.1",
+    "eslint": "^9.18.0",
+    "eslint-plugin-vue": "^9.32.0",
+    "globals": "^15.14.0",
+    "prettier": "^3.4.2",
+    "typescript": "~5.6.3",
+    "typescript-eslint": "^8.20.0",
+    "vite": "^5.4.11",
+    "vue-tsc": "^2.1.10"
+  }
+}

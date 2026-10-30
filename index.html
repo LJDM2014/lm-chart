@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%234a6cf7'/%3E%3Cpath d='M25 72 L45 46 L60 58 L78 28' stroke='white' stroke-width='9' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"
+    />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LM Chart · 图表画廊</title>
+    <script>
+      // 首屏防闪烁：在应用挂载前同步设置主题（与 src/stores/theme.ts 使用同一存储键）
+      ;(function () {
+        var saved = null
+        try {
+          saved = localStorage.getItem('lm-chart-theme')
+        } catch (e) {
+          /* localStorage 不可用时忽略 */
+        }
+        var mode =
+          saved === 'light' || saved === 'dark'
+            ? saved
+            : window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+              ? 'dark'
+              : 'light'
+        document.documentElement.setAttribute('data-theme', mode)
+      })()
+    </script>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
