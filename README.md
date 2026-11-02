@@ -4,25 +4,25 @@
 
 ## 功能特性
 
-- **22+ 图表示例**，覆盖 ECharts、AntV G2、Chart.js、ApexCharts、D3 共 5 个图表库，6 大分类（基础图表 / 统计分析 / 关系网络 / 地理空间 / 特色创意 / 动态交互）
+- **49 个图表示例**，覆盖 ECharts、AntV G2、AntV G6、Chart.js、ApexCharts、D3 共 6 个图表库，6 大分类（基础图表 13 / 统计分析 12 / 关系网络 10 / 地理空间 3 / 特色创意 6 / 动态交互 5），涵盖弦图、旭日图、桑基图、3D 散点、主题河流、动态条形竞速、依赖 DAG、思维导图、中国地图等特色图表
 - **插件化图表注册系统**：路由、画廊列表、搜索索引全部由 `import.meta.glob` 自动聚合，新增图表零登记
 - **亮 / 暗双主题**：CSS 变量驱动，所有图表响应主题变化重绘
 - **全局搜索**：按标题 / 标签 / 分类 / 库 / 描述模糊匹配，支持键盘导航（↑ ↓ Enter Esc）
 - **收藏夹**：localStorage 持久化，画廊「只看收藏」筛选、首页收藏速览
 - **参数实时调节**：详情页参数面板（配色方案 / 滑块 / 开关 / 下拉）经各库增量 API 即时生效，不销毁重建图表
-- **按需加载**：所有图表库动态 import 分包，进入详情页才加载对应库
+- **按需加载**：所有图表库动态 import 分包，进入详情页才加载对应库；`vite.config.ts` 中 `manualChunks` 将 echarts / echarts-gl / g6 / g2 / chartjs / apexcharts / d3 / vendor 拆为稳定 chunk，利于长缓存
 
 ## 技术栈
 
-Vite 5 · TypeScript（strict，禁用 any）· Vue 3.4（`<script setup>`）· Pinia · Vue Router 4 · ECharts 5 · AntV G2 · Chart.js 4 · ApexCharts · D3 7 · shiki（源码高亮）· 手写 CSS（无组件库）
+Vite 5 · TypeScript（strict，禁用 any）· Vue 3.4（`<script setup>`）· Pinia · Vue Router 4 · ECharts 5（+ echarts-gl / echarts-liquidfill / echarts-wordcloud 扩展）· AntV G2 5 · AntV G6 5 · Chart.js 4 · ApexCharts · D3 7 · shiki（源码高亮）· 手写 CSS（无组件库）
 
 ## 本地开发
 
 ```bash
 npm install        # 安装依赖
-npm run dev        # 开发服务器（默认 http://localhost:5173）
+npm run dev        # 开发服务器（http://localhost:3000）
 npm run build      # 类型检查 + 生产构建
-npm run preview    # 本地预览生产构建（默认 http://localhost:4173）
+npm run preview    # 本地预览生产构建（http://localhost:3000）
 npm run lint       # ESLint 检查
 ```
 
@@ -40,7 +40,7 @@ src/charts/{库名}/{图表名}/
 └── data.ts     # 演示数据（可选）
 ```
 
-`{库名}` 取值：`echarts` / `g2` / `chartjs` / `apexcharts` / `d3`；`{图表名}` 与 `meta.id` 保持一致（kebab-case）。
+`{库名}` 取值：`echarts` / `g2` / `g6` / `chartjs` / `apexcharts` / `d3`；`{图表名}` 与 `meta.id` 保持一致（kebab-case）。
 
 ### meta.ts 字段说明
 
@@ -51,7 +51,7 @@ const meta: ChartMeta = {
   id: 'my-chart',              // 唯一 id，必须与目录名一致
   title: '我的图表',            // 展示标题
   category: 'basic',           // 分类：basic | stats | relation | geo | creative | interaction
-  lib: 'echarts',              // 所属库：echarts | g2 | chartjs | apexcharts | d3（与上级目录一致）
+  lib: 'echarts',              // 所属库：echarts | g2 | g6 | chartjs | apexcharts | d3（与上级目录一致）
   tags: ['示例'],               // 标签（参与搜索）
   description: '一句话描述这张图表的亮点与适用场景。',
   difficulty: 'beginner',      // 难度：beginner | intermediate | advanced
@@ -69,9 +69,10 @@ export default meta
 | --- | --- | --- |
 | ECharts | `EchartsChart` | `buildOption(theme, params?)` |
 | AntV G2 | `G2Chart` | `buildSpec(theme, params?)` |
+| AntV G6 | `G6Chart` | `buildSpec(theme, params?)` |
 | Chart.js | `ChartjsChart` | `buildConfig(theme, params?)` |
 | ApexCharts | `ApexChart` | `buildConfig(theme, params?)` |
-| D3 | 手写渲染 | 参考 `src/charts/d3/d3-force-graph/` |
+| D3 | 手写渲染 | 参考 `src/charts/d3/d3-force-graph/` 等任一示例 |
 
 ```vue
 <script setup lang="ts">
@@ -83,6 +84,14 @@ import { buildOption } from './config'
   <EchartsChart :build-option="buildOption" />
 </template>
 ```
+
+需要 ECharts 扩展插件（如 3D、水球图、词云）或 GeoJSON 注册时，通过 `plugins` 属性传入副作用加载函数，容器会在挂载前完成加载：
+
+```vue
+<EchartsChart :build-option="buildOption" :plugins="[ensureChinaMap]" />
+```
+
+中国地图类图表直接复用 `@/adapters/geoMap` 的 `ensureChinaMap`（内部加载 `public/geo/china.json` 并注册），无需自行处理。
 
 ### config.ts：配置与参数控件
 

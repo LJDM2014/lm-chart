@@ -20,7 +20,7 @@ export function buildSpec(theme: ChartTheme, params?: ParamValues): G2Spec {
   return {
     type: 'line',
     data: temps,
-    encode: { x: 'month', y: 'value', color: 'city', shape: smooth ? 'smooth' : 'linear' },
+    encode: { x: 'month', y: 'value', color: 'city', shape: smooth ? 'smooth' : 'line' },
     scale: { color: { range: [palette[0], palette[2], palette[4]] } },
     style: { lineWidth },
     axis: {

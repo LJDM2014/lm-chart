@@ -16,13 +16,23 @@ export type { ChartConfiguration }
 /**
  * 创建 Chart.js 适配器。
  * @param buildConfig 根据主题与参数构建 ChartConfiguration 的工厂函数（来自图表的 config.ts）
+ * @param setup 可选：挂载后启动动态逻辑（如实时数据流定时器），返回清理函数在 destroy 时执行。
+ *        动态图表应在 setup 内自行替换 chart.data 后 update()，实例不销毁。
  */
+export interface ChartJsSetupContext {
+  chart: Chart
+  getTheme: () => ChartTheme
+  getParams: () => ParamValues
+}
+
 export function createChartJsAdapter(
   buildConfig: (theme: ChartTheme, params?: ParamValues) => ChartConfiguration,
+  setup?: (ctx: ChartJsSetupContext) => (() => void) | void,
 ): ChartAdapter {
   let chart: Chart | null = null
   let canvas: HTMLCanvasElement | null = null
   let unsubscribeTheme: (() => void) | null = null
+  let cleanupSetup: (() => void) | null = null
   let params: ParamValues = {}
 
   /** 官方推荐的更新方式：替换 data、合并顶层 options 后 update() */
@@ -43,6 +53,16 @@ export function createChartJsAdapter(
 
       chart = new Chart(canvas, buildConfig(getChartTheme(useThemeStore().isDark), params))
 
+      // 动态图表钩子：实时数据流等动态逻辑在 setup 中启动
+      if (chart && setup) {
+        const ret = setup({
+          chart,
+          getTheme: () => getChartTheme(useThemeStore().isDark),
+          getParams: () => params,
+        })
+        cleanupSetup = typeof ret === 'function' ? ret : null
+      }
+
       const themeStore = useThemeStore()
       unsubscribeTheme = themeStore.$subscribe(applyConfig)
     },
@@ -56,6 +76,8 @@ export function createChartJsAdapter(
       applyConfig()
     },
     destroy() {
+      cleanupSetup?.()
+      cleanupSetup = null
       unsubscribeTheme?.()
       unsubscribeTheme = null
       chart?.destroy()

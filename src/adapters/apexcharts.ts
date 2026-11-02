@@ -20,6 +20,22 @@ export interface ApexChartConfig {
 }
 
 /**
+ * 注入全局默认项：
+ * - height '100%'：跟随容器高度。Apex 默认 'auto' 会按视口剩余空间估高，
+ *   在详情页固定高度预览面板中会溢出遮挡下方内容。
+ * - parentHeightOffset 0：消除对父容器高度的额外偏移。
+ * 图表自身显式设置的 chart.* 优先。
+ */
+function withDefaults(config: ApexChartConfig): ApexOptions {
+  const base: ApexOptions = { chart: { height: '100%', parentHeightOffset: 0 } }
+  return {
+    ...base,
+    ...config.options,
+    chart: { ...base.chart, ...config.options.chart },
+  }
+}
+
+/**
  * 创建 ApexCharts 适配器。
  * @param buildConfig 根据主题与参数构建 ApexChartConfig 的工厂函数（来自图表的 config.ts）
  */
@@ -35,7 +51,7 @@ export function createApexAdapter(
     mount(el) {
       const theme = getChartTheme(useThemeStore().isDark)
       const config = buildConfig(theme, params)
-      chart = new ApexCharts(el, config.options)
+      chart = new ApexCharts(el, withDefaults(config))
       void chart.render()
 
       if (config.setup) {
@@ -46,7 +62,7 @@ export function createApexAdapter(
       const themeStore = useThemeStore()
       unsubscribeTheme = themeStore.$subscribe(() => {
         chart?.updateOptions(
-          buildConfig(getChartTheme(themeStore.isDark), params).options,
+          withDefaults(buildConfig(getChartTheme(themeStore.isDark), params)),
           false,
           true,
         )
@@ -59,7 +75,7 @@ export function createApexAdapter(
     update(next) {
       params = { ...next }
       chart?.updateOptions(
-        buildConfig(getChartTheme(useThemeStore().isDark), params).options,
+        withDefaults(buildConfig(getChartTheme(useThemeStore().isDark), params)),
         false,
         true,
       )

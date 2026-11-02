@@ -182,12 +182,110 @@
 
 ---
 
+## 阶段 6：高级图表拓展
+
+```
+【任务】为 lm-chart 批量新增高级图表（阶段 6，可按批次 6a/6b/6c 分多次会话执行）
+
+【必须遵守的现有约定（与代码一致，不得偏离）】
+1. 每个图表一个目录：src/charts/{lib}/{id}/，含四件套
+   meta.ts / Chart.vue / config.ts / data.ts，Registry 自动发现，
+   严禁手工登记，严禁改动 src/charts/index.ts 与已有图表
+2. meta.ts 导出 ChartMeta：id（=目录名）、title、category、lib、tags、
+   description、difficulty、featured（仅特别出色的图表设 true）
+3. ECharts/G2/Chart.js/ApexCharts 图表的 config.ts 必须导出：
+   - controls?: ControlDef[]（type 仅限 toggle/slider/select，见 src/types/params.ts）
+   - buildOption(theme, params?) 返回完整配置
+   params 消费风格参照 src/charts/echarts/sankey-diagram/config.ts：
+   布尔参数用 `params?.x !== false` 兜底，数值参数用 typeof 判断兜底
+4. ECharts 适配器按需注册组件，禁止 import * as echarts 全量引入；
+   需要扩展包（如 echarts-gl、custom series）时先确认适配器已注册
+5. D3/G6 图表为手写实现模式（参照 d3-force-graph、g6-mind-map），
+   config.ts 可只导出 controls；Chart.vue 内自行处理 resize/destroy
+6. 所有图表：ResizeObserver 容器自适应、onUnmounted destroy、
+   监听主题变化重绘（文字/轴线/分割线颜色随 ChartTheme）
+7. TypeScript strict、禁止 any；npm run build 必须通过
+
+【本阶段目标图表清单（按批次执行，每批 3~5 个）】
+- 批次 6a（ECharts 高级）：
+  · 3D 散点/曲面图（echarts-gl，注意 chunk 分包）
+  · custom series 自定义系列（如日历热力图 calendar heatmap）
+  · 主题河流图 themeRiver
+  · 矩形树图 treemap（带下钻交互）
+- 批次 6b（G2 / Chart.js / ApexCharts 补强）：
+  · G2：河流图 streamgraph、分面图 facet、复合图
+  · Chart.js：气泡图、混合时间轴图
+  · ApexCharts：范围柱状图、热力日历
+- 批次 6c（D3 / G6 定制，体现手写能力）：
+  · D3：弦图 chord diagram、旭日图 sunburst、河流图 streamgraph
+  · G6：依赖关系 DAG 布局图、环形关系图
+
+【每个图表的交付要求】
+- data.ts 提供自造的合理演示数据（真实业务语义，不得用 lorem 占位）
+- config.ts 暴露 3~5 个参数控件（如系列显隐、曲线弯曲度、节点大小、
+  排序方式等），全部经 buildOption 或组件内增量更新生效，禁止销毁重建
+- difficulty 按真实复杂度标注，新增图表至少一半为 advanced
+- 不与现有 30+ 图表语义重复（新增前先查 Registry）
+
+【验收（每批次完成后）】
+- 每个新图表在浏览器中实测：交互预览正常、参数调节即时生效、
+  暗色主题下文字/网格颜色正确
+- 画廊页按分类/按库筛选能看到新图表，搜索标签能命中
+- npm run build 通过，新库（如 echarts-gl）为独立 chunk
+- 验证"新增文件夹即自动收录"未被破坏
+```
+
+---
+
+## 阶段 7：短板补强（地理 / 动态 / 创意）
+
+```
+【任务】补齐分类短板：地理空间分类为空、动态交互与特色创意偏薄
+（阶段 7，可按批次 7a/7b 分多次会话执行）
+
+【必须遵守的现有约定（与阶段 6 一致，不得偏离）】
+1. 四件套目录结构 + Registry 自动发现；严禁手工登记，
+   严禁改动 src/charts/index.ts 与已有图表（适配器可扩展注册组件）
+2. meta.ts 导出 ChartMeta；config.ts 导出 controls?: ControlDef[] 与
+   buildOption(theme, params?)（ECharts/G2/Chart.js/ApexCharts）
+3. TypeScript strict、禁止 any；ResizeObserver 自适应、destroy、主题响应重绘
+4. 禁止引入新的第三方图表库；ECharts 适配器按需注册组件，不全量引入
+
+【本阶段目标图表清单（按批次执行）】
+- 批次 7a（地理空间，ECharts geo，首批覆盖该分类）：
+  · 中国地图涟漪散点图（map + effectScatter，城市级指标分布）
+  · 城市间飞线图（geo + lines，带尾迹特效，迁徙/航线语义）
+  · 省份填色热力地图（map + visualMap 连续色阶）
+  技术要点：地图 GeoJSON 放 public/geo/ 下运行时 fetch 加载，禁止打进主包；
+  适配器需注册 MapChart / EffectScatterChart / LinesChart / GeoComponent / VisualMap
+- 批次 7b（动态交互 + 创意补强）：
+  · ECharts 动态排序条形图（bar race，定时轮换数据 + 增量 setOption）
+  · Chart.js 实时滑动窗口折线（滚动数据流，数据窗口恒定）
+  · ECharts 玫瑰图 nightingale rose（特色创意）
+  · D3 手写 packed circles 气泡图（d3-hierarchy pack，体现定制能力）
+
+【每个图表的交付要求（同阶段 6）】
+- data.ts 自造合理演示数据（真实业务语义）；config.ts 暴露 3~5 个参数控件
+- 增量更新生效（动态类图表只 setOption 数据/样式，不销毁重建）
+- 新增图表至少一半为 advanced；不与现有 42 个图表语义重复
+
+【验收（每批次完成后）】
+- 浏览器逐图实测：渲染、交互、参数即时生效、暗色主题正确
+- 画廊收录 + 按分类「地理空间」筛选可见 7a 图表，搜索标签命中
+- npm run build 通过；geo 图表组件为独立 chunk，地图 JSON 不入主包
+- 动态类图表连续运行 30s 无内存持续增长、无 console 报错
+```
+
+---
+
 ## 里程碑对照
 
 | 阶段 | 交付物 | 状态 |
 |---|---|---|
-| 1 | 可运行的空壳站点（路由 + 主题） | ☐ |
-| 2 | 核心链路可用（Registry + ECharts 10+ 图表） | ☐ |
-| 3 | 5 库并存（每库 3~5 图表） | ☐ |
-| 4 | 完整功能（搜索/收藏/参数调节/响应式） | ☐ |
-| 5 | 正式上线（CI 部署 + 文档） | ☐ |
+| 1 | 可运行的空壳站点（路由 + 主题） | ☑ |
+| 2 | 核心链路可用（Registry + ECharts 10+ 图表） | ☑ |
+| 3 | 5 库并存（每库 3~5 图表） | ☑ |
+| 4 | 完整功能（搜索/收藏/参数调节/响应式） | ☑ |
+| 5 | 正式上线（CI 部署 + 文档） | ☑ |
+| 6 | 高级图表拓展（6a/6b/6c 三批，共 12+ 个高级图表） | ☑ |
+| 7 | 短板补强（地理空间 3 图 + 动态/创意 4 图，共 49 个图表） | ☑ |

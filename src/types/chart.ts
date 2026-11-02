@@ -20,7 +20,7 @@ export const CATEGORY_LABELS: Record<ChartCategory, string> = {
 }
 
 /** 支持的图表库 */
-export const CHART_LIBS = ['echarts', 'g2', 'chartjs', 'apexcharts', 'd3'] as const
+export const CHART_LIBS = ['echarts', 'g2', 'chartjs', 'apexcharts', 'd3', 'g6'] as const
 
 export type ChartLib = (typeof CHART_LIBS)[number]
 
@@ -30,6 +30,7 @@ export const LIB_LABELS: Record<ChartLib, string> = {
   chartjs: 'Chart.js',
   apexcharts: 'ApexCharts',
   d3: 'D3',
+  g6: 'AntV G6',
 }
 
 export const DIFFICULTIES = ['beginner', 'intermediate', 'advanced'] as const

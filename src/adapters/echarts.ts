@@ -21,6 +21,10 @@ import {
   RadarChart,
   GaugeChart,
   ParallelChart,
+  TreemapChart,
+  ThemeRiverChart,
+  MapChart,
+  LinesChart,
 } from 'echarts/charts'
 import {
   GridComponent,
@@ -34,6 +38,9 @@ import {
   TransformComponent,
   MarkLineComponent,
   MarkPointComponent,
+  CalendarComponent,
+  SingleAxisComponent,
+  GeoComponent,
 } from 'echarts/components'
 import { CanvasRenderer } from 'echarts/renderers'
 import { LabelLayout, UniversalTransition } from 'echarts/features'
@@ -60,6 +67,10 @@ use([
   RadarChart,
   GaugeChart,
   ParallelChart,
+  TreemapChart,
+  ThemeRiverChart,
+  MapChart,
+  LinesChart,
   GridComponent,
   TooltipComponent,
   LegendComponent,
@@ -71,6 +82,9 @@ use([
   TransformComponent,
   MarkLineComponent,
   MarkPointComponent,
+  CalendarComponent,
+  SingleAxisComponent,
+  GeoComponent,
   CanvasRenderer,
   LabelLayout,
   UniversalTransition,
@@ -88,13 +102,23 @@ export function baseTooltip(theme: ChartTheme): Record<string, unknown> {
 /**
  * 创建 ECharts 适配器。
  * @param buildOption 根据主题与参数构建完整 option 的工厂函数（来自图表的 config.ts）
+ * @param setup 可选：挂载后启动动态逻辑（如 bar race 定时器），返回清理函数在 destroy 时执行。
+ *        动态图表应在 setup 内自行 chart.setOption 增量刷新，禁止销毁重建。
  */
+export interface EchartsSetupContext {
+  chart: EChartsInstance
+  getTheme: () => ChartTheme
+  getParams: () => ParamValues
+}
+
 export function createEchartsAdapter(
   buildOption: (theme: ChartTheme, params?: ParamValues) => EChartsOption,
+  setup?: (ctx: EchartsSetupContext) => (() => void) | void,
 ): ChartAdapter {
   let chart: EChartsInstance | null = null
   let resizeObserver: ResizeObserver | null = null
   let unsubscribeTheme: (() => void) | null = null
+  let cleanupSetup: (() => void) | null = null
   let resizeRaf = 0
   let params: ParamValues = {}
 
@@ -105,6 +129,16 @@ export function createEchartsAdapter(
     mount(el) {
       chart = init(el)
       chart.setOption(currentOption())
+
+      // 动态图表钩子：定时器等动态逻辑在 setup 中启动
+      if (setup && chart) {
+        const ret = setup({
+          chart,
+          getTheme: () => getChartTheme(useThemeStore().isDark),
+          getParams: () => params,
+        })
+        cleanupSetup = typeof ret === 'function' ? ret : null
+      }
 
       // 容器尺寸自适应（rAF 合帧，避免高频 resize 抖动）
       resizeObserver = new ResizeObserver(() => {
@@ -131,6 +165,8 @@ export function createEchartsAdapter(
       chart?.setOption(currentOption(), { notMerge: true })
     },
     destroy() {
+      cleanupSetup?.()
+      cleanupSetup = null
       if (resizeRaf) {
         cancelAnimationFrame(resizeRaf)
         resizeRaf = 0

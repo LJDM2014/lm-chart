@@ -49,28 +49,55 @@ export function createG2Adapter(
   let chart: Chart | null = null
   let unsubscribeTheme: (() => void) | null = null
   let params: ParamValues = {}
+  let rendering = false
+  let pendingRender = false
 
   const currentSpec = (): G2Spec => buildSpec(getChartTheme(useThemeStore().isDark), params)
+
+  /**
+   * 应用最新 Spec 并重绘。
+   * G2 5.x 的 chart.options() 只更新配置、不会自动重渲染，必须显式 render()。
+   * render 是异步的，这里做串行化：渲染中的调用只记录待处理标记，完成后补一次。
+   */
+  const renderSpec = () => {
+    if (!chart) return
+    if (rendering) {
+      pendingRender = true
+      return
+    }
+    rendering = true
+    chart.options(currentSpec())
+    void chart
+      .render()
+      .catch(() => {
+        // 渲染失败不中断后续更新，finally 中恢复渲染状态
+      })
+      .finally(() => {
+        rendering = false
+        if (pendingRender) {
+          pendingRender = false
+          renderSpec()
+        }
+      })
+  }
 
   return {
     mount(el) {
       chart = new Chart({ container: el, autoFit: true })
-      chart.options(currentSpec())
-      void chart.render()
+      renderSpec()
 
       const themeStore = useThemeStore()
       unsubscribeTheme = themeStore.$subscribe(() => {
-        // G2 5 更新 options 会自动重绘
-        chart?.options(currentSpec())
+        renderSpec()
       })
     },
     resize() {
       chart?.forceFit()
     },
-    /** 参数变化：更新 options，G2 自动增量重绘 */
+    /** 参数变化：应用最新 Spec 并重绘 */
     update(next) {
       params = { ...next }
-      chart?.options(currentSpec())
+      renderSpec()
     },
     destroy() {
       unsubscribeTheme?.()

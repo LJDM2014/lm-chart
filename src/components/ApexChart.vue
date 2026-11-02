@@ -63,5 +63,7 @@ onBeforeUnmount(() => {
 .apex-host {
   width: 100%;
   height: 100%;
+  /* Apex 底部图例为绝对定位，个别图表会溢出几像素，避免盖住下方内容 */
+  overflow: hidden;
 }
 </style>
